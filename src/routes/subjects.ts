@@ -7,9 +7,17 @@ const router = express.Router();
 // Get all subjects with optional search filtering and pagination.
 router.get("/", async (req, res) => {
   try {
-    const {search, department, page = 1, limit = 10} = req.query;
-    const currentPage = Math.max(1, Number(+page));
-    const limitPerPage = Math.max(1, Number(+limit));
+    const {search, department, page, limit} = req.query;
+    const rawPage = Array.isArray(page) ? page[0] : page;
+    const rawLimit = Array.isArray(limit) ? limit[0] : limit;
+    const parsedPage = Number.parseInt(String(rawPage ?? "1"), 10);
+    const parsedLimit = Number.parseInt(String(rawLimit ?? "10"), 10);
+    const currentPage =
+      Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const limitPerPage =
+      Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 10;
     const offset = (currentPage - 1) * limitPerPage;
 
     const filterConditions = [];
@@ -22,9 +30,11 @@ router.get("/", async (req, res) => {
         ),
       );
     }
-    //if departments query is provided, filter by department
+    //if departments query is provided, filtered by department
     if (department) {
       filterConditions.push(ilike(departments.name, `%${department}%`));
+      const deptPattern = `%${String(department).replace(/[%_]/g, '\\$&')}%`; //to prevent sql injection
+      filterConditions.push(ilike(departments.name, deptPattern));
     }
 
     //Combine all filters using AND operator if any exist
