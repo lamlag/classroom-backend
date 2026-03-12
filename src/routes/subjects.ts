@@ -32,8 +32,7 @@ router.get("/", async (req, res) => {
     }
     //if departments query is provided, filtered by department
     if (department) {
-      filterConditions.push(ilike(departments.name, `%${department}%`));
-      const deptPattern = `%${String(department).replace(/[%_]/g, '\\$&')}%`; //to prevent sql injection
+      const deptPattern = `%${String(department).replace(/[%_]/g, "\\$&")}%`; //to prevent sql injection
       filterConditions.push(ilike(departments.name, deptPattern));
     }
 
@@ -57,7 +56,7 @@ router.get("/", async (req, res) => {
       .limit(limitPerPage)
       .offset(offset);
     res.status(200).json({
-      subjects: subjectsList,
+      data: subjectsList,
       pagination: {
         page: currentPage,
         limit: limitPerPage,
